@@ -1,2 +1,4 @@
 .exe
 main
+build/
+bin/
