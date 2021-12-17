@@ -15,3 +15,13 @@ TEST_CASE("Проверка результата")
     REQUIRE(Calculator("1 + (2 * (2.5 + 2.5 + (3 - 2))) - (3 / 1.5)").GetResult() == 11);
     //REQUIRE(Calculator("1.1 + 2.1 + abc").GetResult() == -1);
 }
+
+
+TEST_CASE("Выброс исключений")
+{
+    CHECK_THROWS(Calculator("1.1 + 2.1 + abc").GetResult());
+    CHECK_THROWS(Calculator("1.1 + 2.1 +").GetResult());
+    CHECK_THROWS(Calculator("1.1 + 2.1 )").GetResult());
+    CHECK_THROWS(Calculator(")1.1 + 2.1(").GetResult());
+    CHECK_THROWS(Calculator("1.1 (+) 2.1").GetResult());
+}
