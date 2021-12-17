@@ -22,7 +22,8 @@ int main()
         return 1;
     }
 
-    std::cout << "Результат: " << result << std::endl;
+    std::cout.precision(2);
+    std::cout << std::fixed << "Результат: " << result << std::endl;
 
     return 0;
 }
