@@ -11,4 +11,7 @@ TEST_CASE("Проверка результата")
     REQUIRE(Calculator("2*2*3    -1").GetResult() == 11);
     REQUIRE(Calculator("2*2*(3    -1)").GetResult() == 8);
     REQUIRE(Calculator("(-1)").GetResult() == -1);
+    REQUIRE(Calculator("10 + (8 * 2.5) - (3 / 1,5)").GetResult() == 28);
+    REQUIRE(Calculator("1 + (2 * (2.5 + 2.5 + (3 - 2))) - (3 / 1.5)").GetResult() == 11);
+    //REQUIRE(Calculator("1.1 + 2.1 + abc").GetResult() == -1);
 }

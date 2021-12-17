@@ -56,6 +56,10 @@ Calculator::Calculator(std::string input)
 
 float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iterator& end, char sign, float result)
 {
+    //std::cout << "init: " << std::string(begin, end) << std::endl;
+    //std::cout << "result: " << result << std::endl;
+    //std::cout << "sign: " << sign << std::endl;
+
     std::set<char> signs = {'+', '-', '*', '/'};//')', '('};
     std::set<char> signs_1st = {'*', '/'};
     std::set<char> signs_2nd = {'+', '-'};
@@ -70,11 +74,19 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
     {
         new_iter = std::find_first_of(iter, end, signs.begin(), signs.end());
 
+        //std::cout << "rest: " << std::string(iter, end) << std::endl;
+
+        //std::cout << "sign: " << sign << std::endl;
+        //std::cout << "result: " << result << std::endl;
+
         if (*iter == '(')
         {
+            //std::cout << "skobka" << std::endl;
             //const auto &local_iter = iter + 1;
             auto &local_end = end;
             std::string local_result = std::to_string(this->BracketToFloat(++iter, local_end));
+
+            //std::cout << "before: " << std::string(iter, local_end) << ' ' << "after" << local_result << std::endl;
 
             auto index = --iter - input.begin();
 
@@ -88,8 +100,12 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
         }
         else if (*(new_iter - 1) == ')')
         {
-            result = this->PerformMathOperation(iter, new_iter - 1, sign, result);
-            end = new_iter;
+            //std::cout << "skobka szadi" << std::endl;
+            while (*(new_iter - 1) == ')')
+                --new_iter;
+            result = this->PerformMathOperation(iter, new_iter, sign, result);
+            end = ++new_iter;
+            //std::cout << "exit 2: " << std::string(input.begin(), end) << std::endl;
             return result;
         }
     
@@ -126,8 +142,17 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
                             float left_operand = std::stof(std::string(iter, new_iter));
                             auto local_sign = *(new_iter);
                             auto &local_iter = ++new_iter;
+                            //std::cout << "left operand: " << left_operand << std::endl;
                             auto local_result = std::to_string(this->BracketToFloat(local_iter, local_end, local_sign, left_operand));
 
+                            //std::cout << "local result: " << local_result << std::endl;
+
+                            //std::cout << "before: " << std::string(iter, local_end) << ' ' << "after: " << local_result << std::endl;
+
+                            //std::cout << "rest before replace: " << std::string(iter, end) << std::endl;
+                            //std::cout << "addressof: " << std::addressof(iter) << ' ' << std::addressof(end) << std::endl;
+                            //std::cout << "input: " << input << std::endl;
+                            
                             auto index = iter - input.begin();
 
                             input.replace(iter, local_end, local_result.begin(), local_result.end());
@@ -135,7 +160,12 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
                             iter = input.begin() + index;
                             //begin = input.begin();
                             end = input.end();
-                            
+                            //std::cout << "rest after replace: " << std::string(iter, end) << std::endl;
+                            //std::cout << "addressof: " << std::addressof(iter) << ' ' << std::addressof(end) << std::endl;
+                            //std::cout << "input: " << input << std::endl;
+
+                            //std::cout << std::string(iter, local_end) << ' ' << sign << std::endl;
+
                             continue;
                         }
                     }
@@ -145,7 +175,7 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
                         {
                             result = this->PerformMathOperation(iter, new_iter, sign, result);
                             end = new_iter;
-                            
+                            //std::cout << "exit 1: " << std::string(iter, end) << std::endl;
                             return result;
                         }
                         else
@@ -167,8 +197,10 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
             }
         }
 
+        //std::cout << std::string(iter, end) << std::endl;
         if (new_iter == end)
         {
+            //std::cout << "new_iter == end" << std::endl;
             break;
         }
         else
@@ -179,6 +211,7 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
         
     }
 
+    //std::cout << "exit 0: " << std::string(input.begin(), end) << std::endl;
     return result;
 }
 
@@ -188,8 +221,11 @@ float Calculator::PerformMathOperation(const std::string::iterator& iter, const 
     try
     {
         auto num = std::stof(std::string(iter, new_iter));
+        //std::cout << num << std::endl;
         //iter = new_iter + 1;
         float result = prev_num;
+
+        //std::cout << "  math: " << prev_num << sign << std::string(iter, new_iter) << std::endl;
 
         switch (sign)
         {
@@ -208,7 +244,7 @@ float Calculator::PerformMathOperation(const std::string::iterator& iter, const 
             case '/':
                 try
                 {
-                    result / num;
+                    result /= num;
                 }
                 catch(const std::logic_error& e)
                 {
