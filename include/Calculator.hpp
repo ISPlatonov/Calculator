@@ -21,4 +21,12 @@ public:
 private:
     std::string input;
     float result;
+
+    std::set<char> brackets = {'(', ')'};
+    std::set<char> signs = {'+', '-', '*', '/'};//')', '('};
+    std::set<char> signs_1st = {'*', '/'};
+    std::set<char> signs_2nd = {'+', '-'};
+
+    void CheckSign(std::string::iterator&, char&);
+    void CheckSign(std::string::iterator&);
 };

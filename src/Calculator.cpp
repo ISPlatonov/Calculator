@@ -10,13 +10,71 @@
 
 std::string Calculator::ParseInput(std::string input)
 {
-    input.erase(std::remove_if(input.begin(), input.end(), isspace), input.end());
     std::replace(input.begin(), input.end(), ',', '.');
+
+    try {
+        /*
+        bool has_determ = true;
+        auto iter = input.begin();
+
+        while (iter++ != input.end())
+        {
+            if (isspace(*iter))
+            {
+                has_determ = false;
+                {
+                    while (isspace(*(iter++)));
+                    if (brackets.find(*iter) != brackets.end() || signs.find(*iter) != signs.end())
+                        has_determ = true;
+                    else if (*iter == '.' || isdigit(*iter))
+                        if (!has_determ)
+                            throw std::invalid_argument("Между числами нет знака-разделителя");
+                }
+            }
+        }
+        */
+
+        auto prev_iter = input.begin();
+        auto iter = input.begin();
+        bool has_determ = true;
+        size_t signs_num = 0;
+        size_t brackets_num = 0;
+
+        while (iter != input.end())
+        {
+            signs_num = std::count_if(prev_iter, iter, [=] (char c) -> bool { return signs.find(c) != signs.end(); });
+            brackets_num = std::count_if(prev_iter, iter, [=] (char c) -> bool { return brackets.find(c) != brackets.end(); });
+
+            //std::cout << "signs_num: " << signs_num << std::endl;
+            //std::cout << "bob: " << std::string(prev_iter, iter) << std::endl;
+            //std::cout << "iter index: " << iter - input.begin() << std::endl;
+            //std::cout << "prev index: " << prev_iter - input.begin() << std::endl;
+
+            if (prev_iter == input.begin());
+                //std::cout << "prev_iter == input.begin()" << std::endl;
+            else if (signs_num == 0)
+                throw std::invalid_argument("Между числами нет знака-разделителя");
+            else if (signs_num > brackets_num + 1)
+                throw std::invalid_argument("Слишком много знаков между числами");
+
+            while (isdigit(*iter) || *iter == '.')
+                ++iter;
+            
+            prev_iter = iter;
+            iter = std::find_if(iter, input.end(), [] (char c) -> bool { return isdigit(c) || c == '.'; });
+        }
+    }
+    catch (std::exception)
+    {
+        throw;
+    }
+
+    input.erase(std::remove_if(input.begin(), input.end(), isspace), input.end());
 
     size_t n = 0;
     auto iter = input.begin();
     auto end = input.end();
-    std::set<char> brackets = {'(', ')'};
+    
     while (true)
     {
         iter = std::find_first_of(iter, end, brackets.begin(), brackets.end());
@@ -54,25 +112,50 @@ Calculator::Calculator(std::string input)
 }
 
 
+void Calculator::CheckSign(std::string::iterator& iter, char& sign)
+{
+    if (*iter == '+')
+        ++iter;
+    else if (*iter == '-')
+        sign = *(iter), iter++;
+    else if (*iter == '*' || *iter == '/')
+        throw std::invalid_argument("Знак умножения или деления в начале выражения (м.б. внутри скобки); что имелось ввиду?");
+}
+
+
+void Calculator::CheckSign(std::string::iterator& iter)
+{
+    if (*iter == '+')
+        ++iter;
+    else if (*iter == '-')
+        iter++;
+    else if (*iter == '*' || *iter == '/')
+        throw std::invalid_argument("Знак умножения или деления в начале выражения (м.б. внутри скобки); что имелось ввиду?");
+}
+
+
 float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iterator& end, char sign, float result)
 {
     //std::cout << "init: " << std::string(begin, end) << std::endl;
     //std::cout << "result: " << result << std::endl;
     //std::cout << "sign: " << sign << std::endl;
 
-    std::set<char> signs = {'+', '-', '*', '/'};//')', '('};
-    std::set<char> signs_1st = {'*', '/'};
-    std::set<char> signs_2nd = {'+', '-'};
-
     auto iter = begin;
     auto new_iter = iter;
 
     if (end - begin == 0)
         return 0;
+    
+    CheckSign(iter, sign);
+
+    bool do_find = true;
 
     while (true)
     {
-        new_iter = std::find_first_of(iter, end, signs.begin(), signs.end());
+        if (do_find)
+            new_iter = std::find_first_of(iter, end, signs.begin(), signs.end());
+        else
+            do_find = true;
 
         //std::cout << "rest: " << std::string(iter, end) << std::endl;
 
@@ -82,19 +165,30 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
         if (*iter == '(')
         {
             //std::cout << "skobka" << std::endl;
-            //const auto &local_iter = iter + 1;
+            auto local_iter = iter + 1;
             auto &local_end = end;
-            std::string local_result = std::to_string(this->BracketToFloat(++iter, local_end));
+            std::string local_result = std::to_string(this->BracketToFloat(local_iter, local_end));
 
-            //std::cout << "before: " << std::string(iter, local_end) << ' ' << "after" << local_result << std::endl;
+            //std::cout << "end - local_iter: " << end - local_iter << ", end - local_end: " << end - local_end << std::endl;
+            //std::cout << "before: " << std::string(iter, local_end) << ' ' << "after: " << local_result << std::endl;
 
-            auto index = --iter - input.begin();
+            auto index = iter - input.begin();
 
             input.replace(iter, local_end, local_result.begin(), local_result.end());
 
             iter = input.begin() + index;
             //begin = input.begin();
             end = this->input.end();
+
+            //std::cout << "after replacing: " << std::string(iter, end) << std::endl;
+            
+            //if (iter != input.begin())
+            //    --iter;
+            if (sign == ' ')
+                CheckSign(iter, sign);
+
+            do_find = false;
+            new_iter = std::find_first_of(iter + 1, end, signs.begin(), signs.end());
 
             continue;
         }
@@ -108,19 +202,6 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
             //std::cout << "exit 2: " << std::string(input.begin(), end) << std::endl;
             return result;
         }
-    
-        if (*iter == '+')
-        {
-            ++iter;
-            continue;
-        }
-        else if (*iter == '-')
-        {
-            sign = *(iter), iter++;
-            continue;
-        }
-        else if (*iter == '*' || *iter == '/')
-            throw std::invalid_argument("Знак умножения или деления в начале выражения (м.б. внутри скобки); что имелось ввиду?");
     
         else
         {
@@ -166,6 +247,9 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
 
                             //std::cout << std::string(iter, local_end) << ' ' << sign << std::endl;
 
+                            if (sign == ' ')
+                                CheckSign(iter, sign);
+
                             continue;
                         }
                     }
@@ -192,7 +276,7 @@ float Calculator::BracketToFloat(std::string::iterator& begin, std::string::iter
             }
             catch (const std::exception& e)
             {
-                std::cerr << e.what() << std::endl;
+                //std::cerr << e.what() << std::endl;
                 throw;
             }
         }
@@ -220,12 +304,12 @@ float Calculator::PerformMathOperation(const std::string::iterator& iter, const 
 {
     try
     {
+        //std::cout << "  math: " << prev_num << sign << std::string(iter, new_iter) << std::endl;
+
         auto num = std::stof(std::string(iter, new_iter));
-        //std::cout << num << std::endl;
+        //std::cout << "left: " << num << "\tright: " << prev_num << std::endl;
         //iter = new_iter + 1;
         float result = prev_num;
-
-        //std::cout << "  math: " << prev_num << sign << std::string(iter, new_iter) << std::endl;
 
         switch (sign)
         {
@@ -242,27 +326,22 @@ float Calculator::PerformMathOperation(const std::string::iterator& iter, const 
                 result *= num;
                 break;
             case '/':
-                try
-                {
+                if (num == 0)
+                    throw std::logic_error("Деление на 0");
+                else
                     result /= num;
-                }
-                catch(const std::logic_error& e)
-                {
-                    std::cerr << "На ноль делишь" << std::endl;
-                    throw;
-                }
         }
 
         return result;
     }
     catch (const std::invalid_argument&)
     {
-        std::cerr << "Не получилось привести к числу (" << std::string(iter, new_iter) << ')' << std::endl;
-        throw;
+        //std::cerr << "Не получилось привести к числу (" << std::string(iter, new_iter) << ')' << std::endl;
+        throw std::invalid_argument("Не получилось привести к числу (" + std::string(iter, new_iter) + ')');
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << std::endl;
+        //std::cerr << "math exit" << std::endl;
         throw;
     }
 }
